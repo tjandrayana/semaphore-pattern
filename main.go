@@ -52,9 +52,11 @@ func GenerateTask(i int) Task {
 
 func main() {
 
-	// WithoutSemaphore()
-	// SemaphoreImplementation1()
+	WithoutSemaphore()
+	SemaphoreImplementation1()
 	SemaphoreImplementation2()
+	SemaphoreImplementation3()
+
 }
 
 func WithoutSemaphore() {
@@ -95,7 +97,7 @@ func SemaphoreImplementation2() {
 	sem := semaphore.NewWeighted(10)
 
 	for i := 0; i < 5000; i++ {
-		fmt.Printf("Number of Go Routine : %d\n", runtime.NumGoroutine())
+		fmt.Printf("for 1 Number of Go Routine : %d\n", runtime.NumGoroutine())
 
 		// if semaphore full , it will block
 		if err := sem.Acquire(context.Background(), 1); err != nil {
@@ -111,5 +113,93 @@ func SemaphoreImplementation2() {
 			fmt.Printf("i : %d -> t.Name : %s\n", i, t.Name)
 		}(i)
 	}
+}
 
+func SemaphoreImplementation3() {
+
+	sem := semaphore.NewWeighted(10)
+
+	rc := make(chan error)
+	var j int
+
+	j++
+	go func() {
+
+		defer func() {
+			rc <- nil
+		}()
+
+		for i := 0; i < 5000; i++ {
+			fmt.Printf("for 1 Number of Go Routine : %d\n", runtime.NumGoroutine())
+
+			// if semaphore full , it will block
+			if err := sem.Acquire(context.Background(), 1); err != nil {
+				log.Fatal(err)
+			}
+
+			go func(i int) {
+				defer func() {
+					sem.Release(1) // release
+				}()
+
+				t := GenerateTask(i)
+				fmt.Printf("i : %d -> t.Name : %s\n", i, t.Name)
+			}(i)
+		}
+	}()
+
+	j++
+	go func() {
+		defer func() {
+			rc <- nil
+		}()
+
+		for i := 0; i < 5000; i++ {
+			fmt.Printf("for 2 Number of Go Routine : %d\n", runtime.NumGoroutine())
+
+			// if semaphore full , it will block
+			if err := sem.Acquire(context.Background(), 1); err != nil {
+				log.Fatal(err)
+			}
+
+			go func(i int) {
+				defer func() {
+					sem.Release(1) // release
+				}()
+
+				t := GenerateTask(i)
+				fmt.Printf("i : %d -> t.Name : %s\n", i, t.Name)
+			}(i)
+		}
+	}()
+
+	j++
+	go func() {
+
+		defer func() {
+			rc <- nil
+		}()
+
+		for i := 0; i < 5000; i++ {
+			fmt.Printf("for 3 Number of Go Routine : %d\n", runtime.NumGoroutine())
+
+			// if semaphore full , it will block
+			if err := sem.Acquire(context.Background(), 1); err != nil {
+				log.Fatal(err)
+			}
+
+			go func(i int) {
+				defer func() {
+					sem.Release(1) // release
+				}()
+
+				t := GenerateTask(i)
+				fmt.Printf("i : %d -> t.Name : %s\n", i, t.Name)
+			}(i)
+		}
+	}()
+
+	for i := 0; i < j; i++ {
+		<-rc
+	}
 }
